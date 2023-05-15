@@ -1,3 +1,4 @@
+const path = require('path')
 const { defineConfig } = require('@vue/cli-service')
 module.exports = defineConfig({
   transpileDependencies: true,
@@ -7,5 +8,17 @@ module.exports = defineConfig({
       template: 'public/index.html',
       filename: 'index.html',
     }
+  },
+  chainWebpack: (config) => {
+    config.module
+      .rule('js')
+      .include
+      .add(path.resolve(__dirname, 'packages'))
+      .end()
+      .use('babel')
+      .loader('babel-loader')
+      .tap((options) => {
+        return options
+      })
   }
 })
