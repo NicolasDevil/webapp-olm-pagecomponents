@@ -1,0 +1,35 @@
+<template>
+  <div :class="[
+    'el-radio-group',
+    stacked ? 'el-group-stacked':''
+  ]"  role="group">
+    <slot></slot>
+  </div>
+</template>
+<script>
+  import Emitter from '../../../src/mixins/emitter';
+
+  export default {
+    name: 'ElRadioGroup',
+
+    componentName: 'ElRadioGroup',
+
+    mixins: [Emitter],
+
+    props: {
+      value: {},
+      size: String,
+      fill: String,
+      textColor: String,
+      disabled: Boolean,
+      stacked: Boolean
+    },
+    watch: {
+      value(value) {
+        this.$emit('change', value);
+        this.dispatch('ElFormItem', 'el.form.change', [this.value]);
+      }
+    }
+  };
+</script>
+

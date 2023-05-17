@@ -1,0 +1,47 @@
+.float-input {
+    position: relative;
+    display: inline-block;
+}
+
+.float-input input {
+    outline: none;
+    background-color: transparent;
+}
+
+.float-input .el-input__inner:focus {
+    outline: none;
+    background-color: transparent;
+}
+
+.float-input .el-input__inner:hover {
+    background-color: transparent;
+}
+
+.float-input-label {
+    color: var(--color-gray-70);
+    font-size: 14px;
+    font-weight: normal;
+    position: absolute;
+    pointer-events: none;
+    left: 12px;
+    line-height: 32px;
+    transition: 0.2s ease all;
+    -moz-transition: 0.2s ease all;
+    -webkit-transition: 0.2s ease all;
+}
+.float-input.focused label,
+.float-input input:focus ~ label
+{
+    font-size: 10px;
+    line-height: 1px;
+    color: var(--color-blue-60);
+    background-color: #f4f4f4;
+    padding: 0 2px;
+}
+.is-error .float-input.focused label,
+.is-error .float-input input:focus ~ label,
+.is-error .float-input-label {
+    color: var(--color-red-70);
+}
+
+

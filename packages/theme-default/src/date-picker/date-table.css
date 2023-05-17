@@ -1,0 +1,173 @@
+@import "../common/var.css";
+
+@component-namespace el {
+  @b date-table {
+    font-size: 12px;
+    min-width: 224px;
+    user-select: none;
+    color:var(--input-color);
+    border-collapse:separate;
+    border-spacing:0px 3px;
+    outline:none;
+
+    &.focused .current{
+      /*box-shadow: 0 0 4px 2px rgba(0,160,209,.75);*/
+       outline: auto -webkit-focus-ring-color;
+    }
+
+    @when week-mode {
+      .el-date-table__row {
+        &:hover {
+          background-color: var(--datepicker-cell-hover-color);
+        }
+        &.current {
+          background-color: var(--datepicker-inrange-color);
+        }
+      }
+    }
+
+    td {
+      width: 32px;
+      height: 32px;
+      line-height: 32px;
+      box-sizing: border-box;
+      text-align: center;
+      cursor: pointer;
+      /*border:1px solid var(--color-white);*/
+      border-right:0px;
+      border-top:0px;
+      
+      & .datepicker-day-btn{
+        width: 30px;
+        height: 30px;
+        box-sizing: border-box;
+        text-align: center;
+        cursor: pointer;
+        border: none;
+        line-height: 30px;
+      }
+
+      &.next-month,
+      &.prev-month {
+        color: var(--datepicker-off-color);
+      }
+
+      &.today {
+        color: var(--color-red-60);
+        position: relative;
+        &:before {
+          content: " ";
+          position: absolute;
+          top: 0px;
+          right: 0px;
+          width: 0;
+          height: 0;
+          border-left: .5em solid transparent;
+        }
+        :hover {
+          color: #ffffff;
+        }
+      }
+      &.available {
+        font-weight: bold;
+      }
+      &.available.selected {
+        background-color: black;
+        color: #eeeeee;
+        border-radius: 25px;
+      }
+      &.hover,& .start-date.hover,& .end-date.hover,
+      &.available:hover {
+        background-color: var(--datepicker-cell-hover-color)!important;
+        border-radius: 50%;
+        text-align:center;
+        margin-right: 1px;
+        margin-bottom : 1px;
+      }
+      &.available.today:hover {
+         background-color: var(--color-red-60)!important;
+         color:#ffffff;
+       }
+      &.available.in-range:hover {
+         background-color: var(--datepicker-active-color)!important;
+         border-radius:0;
+       }
+      &.available.in-range.start-date:hover {
+         background-color: var(--datepicker-active-color)!important;
+         border-radius: 50% 0 0 50%;
+       }
+      &.available.in-range.end-date:hover {
+         background-color: var(--datepicker-active-color)!important;
+         border-radius: 0 50% 50% 0;
+       }
+      &.available.in-range.end-date.start-date:hover {
+         border-radius: 50%;
+       }
+      &.in-range {
+        background-color: var(--datepicker-inrange-color);
+        color: var(--color-white);
+        margin-bottom: 1px;
+        &:hover {
+          background-color: var(--datepicker-inrange-hover-color);
+        }
+      }
+      &.available.in-range.hover {
+        color: var(--color-gray-100);
+       }
+      &.current:not(.disabled),
+      &.start-date{
+         background-color: var(--datepicker-active-color) !important;
+         color: var(--color-white) !important;
+         border-radius: 50%;
+         border-right: none;
+       },
+      &.start-date.in-range{
+         border-radius: 50% 0 0 50%;
+       }
+      &.end-date {
+        background-color: var(--datepicker-active-color) !important;
+        color: var(--color-white) !important;
+        border-radius: 0 50% 50% 0;
+        border-left: none;
+      }
+      &.start-date.end-date {
+        border-radius: 50%;
+       }
+      &.disabled {
+        /*background-color: #f4f4f4;*--wbx remove--*/
+        opacity: 1;
+        cursor: not-allowed;
+        color: #ccc;
+      }
+
+      &.week {
+        font-size: 80%;
+        color: var(--datepicker-header-color);
+      }      
+    }
+
+    th {
+      padding: 5px 5px 2px 5px;
+      color: var(--datepicker-header-color);
+      font-weight: 400;
+      /*border-bottom: 1px solid var(--datepicker-title-line-color);*/
+    }
+  }
+}
+.el-date-table-bank-tr{
+   height: 4px;
+}
+#weekdays {
+  font-size: var(--font-size-small);
+}
+
+.sr-only{
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
