@@ -25,7 +25,8 @@ module.exports = defineConfig({
   configureWebpack: {
     resolve: {
       alias: {
-        '@': resolve('package'),
+        '@pkg': resolve('packages'),
+        '@config': resolve('config'),
         '~': resolve('examples')
       }
     }
