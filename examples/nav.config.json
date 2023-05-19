@@ -1,20 +1,12 @@
 {
   "zh-CN": [
     {
-      "name": "更新日志",
-      "path": "/changelog"
-    },
-    {
-      "name": "Element React",
-      "href": "https://elemefe.github.io/element-react/"
-    },
-    {
-      "name": "Element Angular",
-      "href": "https://element-angular.faas.ele.me/"
-    },
-    {
       "name": "开发指南",
       "children": [
+        {
+          "name": "更新日志",
+          "path": "/changelog"
+        },
         {
           "path": "/installation",
           "name": "安装"
@@ -143,6 +135,10 @@
             {
               "path": "/form",
               "title": "Form 表单"
+            },
+            {
+              "path": "/FormKit",
+              "title": "FormKit 表单套件"
             }
           ]
         },
