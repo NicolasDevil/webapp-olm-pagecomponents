@@ -1,12 +1,12 @@
 <template>
   <transition name="el-zoom-in-top" @after-leave="doDestroy">
-    <ul class="el-dropdown-menu el-popper" :class="[size && `el-dropdown-menu--${size}`]" v-show="showPopper" role="listbox" tabindex="-1">
+    <ul class="el-dropdown-menu el-popper" :class="[size && `el-dropdown-menu--${size}`]" v-show="showPopper">
       <slot></slot>
     </ul>
   </transition>
 </template>
 <script>
-  import Popper from '../../../src/utils/vue-popper';
+  import Popper from 'element-ui/src/utils/vue-popper';
 
   export default {
     name: 'ElDropdownMenu',
@@ -18,7 +18,7 @@
     props: {
       visibleArrow: {
         type: Boolean,
-        default: false
+        default: true
       },
       arrowOffset: {
         type: Number,

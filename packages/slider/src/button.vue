@@ -4,17 +4,23 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @mousedown="onButtonDown"
-    tabindex="0"
-    @keydown="handleKeyDown"
-    role="slider"
-    :aria-valuemin="min"
-    :aria-valuemax="max"
-    :aria-valuenow="value"
-    :aria-valuetext="value"
+    @touchstart="onButtonDown"
     :class="{ 'hover': hovering, 'dragging': dragging }"
     :style="wrapperStyle"
-    ref="button">
-    <el-tooltip placement="top" ref="tooltip" :disabled="!showTooltip" :always-show="alwaysShowTooltip" :visible-arrow="!alwaysShowTooltip">
+    ref="button"
+    tabindex="0"
+    @focus="handleMouseEnter"
+    @blur="handleMouseLeave"
+    @keydown.left="onLeftKeyDown"
+    @keydown.right="onRightKeyDown"
+    @keydown.down.prevent="onLeftKeyDown"
+    @keydown.up.prevent="onRightKeyDown"
+  >
+    <el-tooltip
+      placement="top"
+      ref="tooltip"
+      :popper-class="tooltipClass"
+      :disabled="!showTooltip">
       <span slot="content">{{ formatValue }}</span>
       <div class="el-slider__button" :class="{ 'hover': hovering, 'dragging': dragging }"></div>
     </el-tooltip>
@@ -22,7 +28,7 @@
 </template>
 
 <script>
-  import ElTooltip from '../../../packages/tooltip';
+  import ElTooltip from 'element-ui/packages/tooltip';
 
   export default {
     name: 'ElSliderButton',
@@ -32,10 +38,6 @@
     },
 
     props: {
-      limit:{
-        type: Array,
-        default: () =>{return []}
-      },
       value: {
         type: Number,
         default: 0
@@ -44,13 +46,14 @@
         type: Boolean,
         default: false
       },
-      alwaysShowTooltip: Boolean
+      tooltipClass: String
     },
 
     data() {
       return {
         hovering: false,
         dragging: false,
+        isClick: false,
         startX: 0,
         currentX: 0,
         startY: 0,
@@ -63,7 +66,7 @@
 
     computed: {
       disabled() {
-        return this.$parent.disabled;
+        return this.$parent.sliderDisabled;
       },
 
       max() {
@@ -115,7 +118,6 @@
       },
 
       hideTooltip() {
-        if(this.alwaysShowTooltip)return;
         this.$refs.tooltip && (this.$refs.tooltip.showPopper = false);
       },
 
@@ -134,63 +136,61 @@
         event.preventDefault();
         this.onDragStart(event);
         window.addEventListener('mousemove', this.onDragging);
+        window.addEventListener('touchmove', this.onDragging);
         window.addEventListener('mouseup', this.onDragEnd);
+        window.addEventListener('touchend', this.onDragEnd);
         window.addEventListener('contextmenu', this.onDragEnd);
       },
-
+      onLeftKeyDown() {
+        if (this.disabled) return;
+        this.newPosition = parseFloat(this.currentPosition) - this.step / (this.max - this.min) * 100;
+        this.setPosition(this.newPosition);
+        this.$parent.emitChange();
+      },
+      onRightKeyDown() {
+        if (this.disabled) return;
+        this.newPosition = parseFloat(this.currentPosition) + this.step / (this.max - this.min) * 100;
+        this.setPosition(this.newPosition);
+        this.$parent.emitChange();
+      },
       onDragStart(event) {
         this.dragging = true;
+        this.isClick = true;
+        if (event.type === 'touchstart') {
+          event.clientY = event.touches[0].clientY;
+          event.clientX = event.touches[0].clientX;
+        }
         if (this.vertical) {
           this.startY = event.clientY;
         } else {
           this.startX = event.clientX;
         }
         this.startPosition = parseFloat(this.currentPosition);
+        this.newPosition = this.startPosition;
       },
 
       onDragging(event) {
         if (this.dragging) {
+          this.isClick = false;
           this.displayTooltip();
+          this.$parent.resetSize();
           let diff = 0;
+          if (event.type === 'touchmove') {
+            event.clientY = event.touches[0].clientY;
+            event.clientX = event.touches[0].clientX;
+          }
           if (this.vertical) {
             this.currentY = event.clientY;
-            diff = (this.startY - this.currentY) / this.$parent.$sliderSize * 100;
+            diff = (this.startY - this.currentY) / this.$parent.sliderSize * 100;
           } else {
             this.currentX = event.clientX;
-            diff = (this.currentX - this.startX) / this.$parent.$sliderSize * 100;
+            diff = (this.currentX - this.startX) / this.$parent.sliderSize * 100;
           }
           this.newPosition = this.startPosition + diff;
           this.setPosition(this.newPosition);
         }
       },
-      handleKeyDown(event) {
-        let diff =0;
-        if (event.keyCode === 37 | event.keyCode === 38){
-          diff -=  this.step
-        }else if(event.keyCode === 39 | event.keyCode === 40){
-          diff += this.step
-        }
-        if(diff) {
-          this.hideTooltip();
-          let value = this.toLimitValue(this.value + diff);
-          this.$emit('input', value);
 
-          if (this.value !== this.oldValue) {
-            this.oldValue = this.value;
-          }
-          this.$nextTick(()=>{
-            this.$refs.tooltip && this.$refs.tooltip.updatePopper();
-          })
-        }
-      },
-      toLimitValue(val){
-        if(this.limit.length){
-          val = Math.max(this.limit[0],val);
-          val = Math.min(this.limit[1],val)
-        }
-
-        return val;
-      },
       onDragEnd() {
         if (this.dragging) {
           /*
@@ -200,18 +200,21 @@
           setTimeout(() => {
             this.dragging = false;
             this.hideTooltip();
-            this.setPosition(this.newPosition);
+            if (!this.isClick) {
+              this.setPosition(this.newPosition);
+              this.$parent.emitChange();
+            }
           }, 0);
           window.removeEventListener('mousemove', this.onDragging);
+          window.removeEventListener('touchmove', this.onDragging);
           window.removeEventListener('mouseup', this.onDragEnd);
+          window.removeEventListener('touchend', this.onDragEnd);
           window.removeEventListener('contextmenu', this.onDragEnd);
         }
       },
 
       setPosition(newPosition) {
-        if(!newPosition){
-          return;
-        }
+        if (newPosition === null || isNaN(newPosition)) return;
         if (newPosition < 0) {
           newPosition = 0;
         } else if (newPosition > 100) {
@@ -221,10 +224,11 @@
         const steps = Math.round(newPosition / lengthPerStep);
         let value = steps * lengthPerStep * (this.max - this.min) * 0.01 + this.min;
         value = parseFloat(value.toFixed(this.precision));
-
-        value = this.toLimitValue(value);
         this.$emit('input', value);
-        this.$refs.tooltip && this.$refs.tooltip.updatePopper();
+        this.$nextTick(() => {
+          this.displayTooltip();
+          this.$refs.tooltip && this.$refs.tooltip.updatePopper();
+        });
         if (!this.dragging && this.value !== this.oldValue) {
           this.oldValue = this.value;
         }

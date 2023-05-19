@@ -1,91 +1,42 @@
 <template>
-  <table 
-    role="grid" 
-    :aria-label="currentLabel"
-    @focus="isFocus = true"
-    @blur="isFocus = false"
+  <table
+    cellspacing="0"
+    cellpadding="0"
     class="el-date-table"
     @click="handleClick"
-    @keydown="handleKeydown"
     @mousemove="handleMouseMove"
-    :class="{ 'is-week-mode': selectionMode === 'week' ,'focused': isFocus}"
-  >
-  <caption class="sr-only a11y">{{monthLabelstr}}</caption>
-  <thead>
+    :class="{ 'is-week-mode': selectionMode === 'week' }">
+    <tbody>
     <tr>
-      <th scope="col" v-if="showWeekNumber">{{ t('el.datepicker.week') }}</th>
-      <th scope="col" v-for="(week, key) in WEEKS" :aria-label="WEEKSFull[key]" :key="key">{{ t('el.datepicker.weeks.' + week) }}</th>
+      <th v-if="showWeekNumber">{{ t('el.datepicker.week') }}</th>
+      <th v-for="(week, key) in WEEKS" :key="key">{{ t('el.datepicker.weeks.' + week) }}</th>
     </tr>
-  </thead>
-  <tbody :tabindex="isRange? 0: -1">
-    <tr class="el-date-table__row"
-        v-for="(row, key) in rows"
-        :class="{ current: isWeekActive(row[1]) }"
-        :key="key"        
-      >
-      <template  v-for="(cell, key) in row">
-      <td v-if="cell.type == 'today'"        
-        :id="getCellId(cell)"
+    <tr
+      class="el-date-table__row"
+      v-for="(row, key) in rows"
+      :class="{ current: isWeekActive(row[1]) }"
+      :key="key">
+      <td
+        v-for="(cell, key) in row"
         :class="getCellClasses(cell)"
-        :key="key"
-        :data-date="cell.text"
-        :data-month="cell.monthLabelStr"
-        :data-year="cell.yearLabel"
-      >
-          
-        <div 
-          :aria-label="cell.label"
-          :aria-disabled="cell.disabled"
-          :ref="cell.ref"
-          aria-current="date"
-          class="datepicker-day-btn"
-          role="button"
-          :aria-selected="getCellClasses(cell).indexOf('current')>-1"  
-          :tabindex="cell.tabindex"
-          :autofocus="cell.disabled? false: 'autofocus'"
-        >
-          <span :aria-label="getCellClasses(cell).indexOf('current')>-1 && !isSafari() && 'selected'">
+        :key="key">
+        <div>
+          <span>
             {{ cell.text }}
           </span>
         </div>
       </td>
-      <td v-else
-        :class="getCellClasses(cell)"
-        :id="getCellId(cell)"
-        :key="key"
-        :data-date="cell.text"
-        :data-month="cell.monthLabelStr"
-        :data-year="cell.yearLabel"
-      >
-        <div 
-          :aria-label="cell.label"
-          :aria-disabled="cell.disabled"
-          :aria-selected="getCellClasses(cell).indexOf('current')>-1"
-          :ref="cell.ref"
-          role="button"
-          class="datepicker-day-btn"
-          :tabindex="cell.tabindex"
-          :autofocus="cell.tabindex === 0 ? 'autofocus': false"
-        >
-         
-          <span :aria-label="getCellClasses(cell).indexOf('current')>-1 && !isSafari() && 'selected'">
-            {{ cell.text }}
-          </span>
-        </div>
-      </td>
-      </template>
     </tr>
     </tbody>
   </table>
 </template>
+
 <script>
-  import { getFirstDayOfMonth, getDayCountOfMonth, getWeekNumber, getStartDateOfMonth, prevDate, nextDate, isDate, clearTime as _clearTime} from '../util/date-util';
-  import Locale from '../../../../src/mixins/locale';
-  import { KEY_CODES } from '../util';
-  import { arrayFindIndex, arrayFind, coerceTruthyValueToArray } from '../../../../src/utils/util';
-  import { DAY_DURATION } from '../util';
+  import { getFirstDayOfMonth, getDayCountOfMonth, getWeekNumber, getStartDateOfMonth, prevDate, nextDate, isDate, clearTime as _clearTime} from 'element-ui/src/utils/date-util';
+  import Locale from 'element-ui/src/mixins/locale';
+  import { arrayFindIndex, arrayFind, coerceTruthyValueToArray } from 'element-ui/src/utils/util';
+
   const WEEKS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-  const WEEKSFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const getDateTimestamp = function(time) {
     if (typeof time === 'number' || typeof time === 'string') {
       return _clearTime(new Date(time)).getTime();
@@ -95,7 +46,7 @@
       return NaN;
     }
   };
-  
+
   // remove the first element that satisfies `pred` from arr
   // return a new array if modification occurs
   // return the original array otherwise
@@ -103,19 +54,17 @@
     const idx = typeof pred === 'function' ? arrayFindIndex(arr, pred) : arr.indexOf(pred);
     return idx >= 0 ? [...arr.slice(0, idx), ...arr.slice(idx + 1)] : arr;
   };
-  const monthLabel = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const localeOption = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
   export default {
     mixins: [Locale],
+
     props: {
       firstDayOfWeek: {
         default: 7,
         type: Number,
         validator: val => val >= 1 && val <= 7
       },
-      year: '',
-      month: '',
+
       value: {},
 
       defaultValue: {
@@ -137,7 +86,7 @@
       },
 
       disabledDate: {},
-
+  
       cellClassName: {},
 
       minDate: {},
@@ -151,21 +100,27 @@
             selecting: false
           };
         }
-      },
-      ariaLable: String,
-
-      monthLabelstr: String,
-      locale: String
+      }
     },
+
     computed: {
       offsetDay() {
         const week = this.firstDayOfWeek;
         // 周日为界限，左右偏移的天数，3217654 例如周一就是 -1，目的是调整前两行日期的位置
         return week > 3 ? 7 - week : -week;
       },
+
       WEEKS() {
         const week = this.firstDayOfWeek;
         return WEEKS.concat(WEEKS).slice(week, week + 7);
+      },
+
+      year() {
+        return this.date.getFullYear();
+      },
+
+      month() {
+        return this.date.getMonth();
       },
 
       startDate() {
@@ -207,27 +162,22 @@
             }
 
             cell.type = 'normal';
-            cell.tabindex = -1;
+
             const index = i * 7 + j;
             const time = nextDate(startDate, index - offset).getTime();
             cell.inRange = time >= getDateTimestamp(this.minDate) && time <= getDateTimestamp(this.maxDate);
             cell.start = this.minDate && time === getDateTimestamp(this.minDate);
             cell.end = this.maxDate && time === getDateTimestamp(this.maxDate);
-            const obj = new Date(time);
             const isToday = time === now;
+
             if (isToday) {
               cell.type = 'today';
-              if (!this.date && this.selectionMode !== 'range') {
-                cell.tabindex = 0;
-              }
             }
+
             if (i >= 0 && i <= 1) {
               const numberOfDaysFromPreviousMonth = day + offset < 0 ? 7 + day + offset : day + offset;
 
               if (j + i * 7 >= numberOfDaysFromPreviousMonth) {
-                if (j + i * 7 === numberOfDaysFromPreviousMonth) {
-                  cell.firstDayMonth = true;
-                }
                 cell.text = count++;
               } else {
                 cell.text = dateCountOfLastMonth - (numberOfDaysFromPreviousMonth - j % 7) + 1 + i * 7;
@@ -241,32 +191,11 @@
                 cell.type = 'next-month';
               }
             }
-            cell.label = obj.toLocaleDateString(this.locale, localeOption);
-            cell.monthLabel = monthLabel[obj.getMonth()];
-            cell.yearLabel = obj.getFullYear();
-            cell.weekLabel = WEEKSFull[j];
+
             let cellDate = new Date(time);
-            cell.dateLabel = cellDate.getDate();
-            cell.monthLabelStr = obj.getMonth();
-            cell.dateObj = cellDate;
             cell.disabled = typeof disabledDate === 'function' && disabledDate(cellDate);
-            if (!cell.disabled) {
-              cell.selected = arrayFind(selectedDate, date => date.getTime() === cellDate.getTime());
-              if (cell.selected) {
-                this.currentLabel = cell.label;
-              }
-            } else {
-              cell.tabindex = -1;
-            }
+            cell.selected = arrayFind(selectedDate, date => date.getTime() === cellDate.getTime());
             cell.customClass = typeof cellClassName === 'function' && cellClassName(cellDate);
-            if (this.date) {
-              let focusDay = this.date;
-              if ((focusDay.getDate() === cell.dateObj.getDate()) &&
-                  (focusDay.getMonth() === cell.dateObj.getMonth()) &&
-                  (focusDay.getFullYear() === cell.dateObj.getFullYear()) && this.selectionMode !== 'range') {
-                cell.tabindex = 0;
-              }
-            }
             this.$set(row, this.showWeekNumber ? j + 1 : j, cell);
           }
 
@@ -301,38 +230,23 @@
         if (getDateTimestamp(newVal) !== getDateTimestamp(oldVal)) {
           this.markRange(this.minDate, this.maxDate);
         }
-      },
-      date(val) {
-        if (this.selectionMode !== 'range') {
-          this.markSelected(val);
-        }
       }
     },
+
     data() {
-      const getId = () => {
-        return (Math.random() * 100).toFixed(0);
-      };
       return {
         tableRows: [ [], [], [], [], [], [] ],
         lastRow: null,
-        lastColumn: null,
-        WEEKSFull: WEEKSFull,
-        id: getId() + '_' + getId(),
-        isFocus: false,
-        currentLabel: this.$props.ariaLable || this.t('el.datepicker.year'),
-        isRange: this.selectionMode === 'range'
+        lastColumn: null
       };
     },
 
     methods: {
-      getCellId(cell) {
-        return this.id + '_' + cell.row + '_' + cell.text;
-      },
       cellMatchesDate(cell, date) {
         const value = new Date(date);
         return this.year === value.getFullYear() &&
-                this.month === value.getMonth() &&
-                Number(cell.text) === value.getDate();
+          this.month === value.getMonth() &&
+          Number(cell.text) === value.getDate();
       },
 
       getCellClasses(cell) {
@@ -355,7 +269,6 @@
 
         if (selectionMode === 'day' && (cell.type === 'normal' || cell.type === 'today') && this.cellMatchesDate(cell, this.value)) {
           classes.push('current');
-          this.$el && this.$el.setAttribute('aria-activedescendant', this.getCellId(cell));
         }
 
         if (cell.inRange && ((cell.type === 'normal' || cell.type === 'today') || this.selectionMode === 'week')) {
@@ -376,7 +289,6 @@
 
         if (cell.selected) {
           classes.push('selected');
-
         }
 
         if (cell.customClass) {
@@ -416,32 +328,7 @@
         }
         return false;
       },
-      markSelected(date) {
-        let selectedDate = 0;
-        if (date) {
-          selectedDate = getDateTimestamp(date);
-        }
-        const rows = this.rows;
-        for (let i = 0, k = rows.length; i < k; i++) {
-          const row = rows[i];
-          for (let j = 0, l = row.length; j < l; j++) {
-            if (this.showWeekNumber && j === 0) continue;
 
-            const cell = row[j];
-            if (!selectedDate) {
-              cell.selected = false;
-            } else if (selectedDate === new Date(cell.label).getTime()) {
-              //  } else if (+selectedDate === +cell.dateLabel) {
-              cell.selected = true;
-              if (this.selectionMode !== 'range') {
-                this.currentLabel = cell.label;
-              }
-            } else {
-              cell.selected = false;
-            }
-          }
-        }
-      },
       markRange(minDate, maxDate) {
         minDate = getDateTimestamp(minDate);
         maxDate = getDateTimestamp(maxDate) || minDate;
@@ -464,6 +351,7 @@
           }
         }
       },
+
       handleMouseMove(event) {
         if (!this.rangeState.selecting) return;
 
@@ -497,17 +385,6 @@
           });
         }
       },
-      getCellElByDate(date) {
-        const startDate = this.startDate;
-        const rows = this.rows;
-        const index = (date - startDate) / DAY_DURATION;
-        let cel = Math.floor(index / 7);
-        const row = rows[cel];
-        if (index >= 0 && row) {
-          let day = row[Math.floor(index % 7)];
-          return this.$el.rows[day.row + 1].cells[day.column];
-        }
-      },
 
       handleClick(event) {
         let target = event.target;
@@ -519,6 +396,7 @@
         }
 
         if (target.tagName !== 'TD') return;
+
         const row = target.parentNode.rowIndex - 1;
         const column = this.selectionMode === 'week' ? 1 : target.cellIndex;
         const cell = this.rows[row][column];
@@ -540,7 +418,7 @@
             this.rangeState.selecting = false;
           }
         } else if (this.selectionMode === 'day') {
-          this.$emit('pick', newDate, true);
+          this.$emit('pick', newDate);
         } else if (this.selectionMode === 'week') {
           const weekNumber = getWeekNumber(newDate);
           const value = newDate.getFullYear() + 'w' + weekNumber;
@@ -553,82 +431,9 @@
         } else if (this.selectionMode === 'dates') {
           const value = this.value || [];
           const newValue = cell.selected
-                  ? removeFromArray(value, date => date.getTime() === newDate.getTime())
-                  : [...value, newDate];
+            ? removeFromArray(value, date => date.getTime() === newDate.getTime())
+            : [...value, newDate];
           this.$emit('pick', newValue);
-        }
-      },
-
-      handleKeydown(event) {
-        const keyCode = event.keyCode;
-        if (keyCode === KEY_CODES.ESC || keyCode === KEY_CODES.TAB) {
-          return;
-        }
-        const list = [KEY_CODES.UP, KEY_CODES.DOWN, KEY_CODES.LEFT, KEY_CODES.RIGHT];
-        if (this.selectionMode !== 'range') {
-          if (list.indexOf(keyCode) !== -1) {
-            event.preventDefault();
-            event.stopPropagation();
-            this.handleKeyControl(keyCode);
-          }
-          if (keyCode === KEY_CODES.ENTER) {
-            this.$emit('pick', this.date, true);
-          }
-        }
-      },
-
-      handleKeyControl(keyCode) {
-        const mapping = {
-          year: {
-            [KEY_CODES.UP]: -4,
-            [KEY_CODES.DOWN]: 4,
-            [KEY_CODES.LEFT]: -1,
-            [KEY_CODES.RIGHT]: 1,
-            offset: (date, step) => date.setFullYear(date.getFullYear() + step)
-          },
-          month: {
-            [KEY_CODES.UP]: -4,
-            [KEY_CODES.DOWN]: 4,
-            [KEY_CODES.LEFT]: -1,
-            [KEY_CODES.RIGHT]: 1,
-            offset: (date, step) => date.setMonth(date.getMonth() + step)
-          },
-          week: {
-            [KEY_CODES.UP]: -1,
-            [KEY_CODES.DOWN]: 1,
-            [KEY_CODES.LEFT]: -1,
-            [KEY_CODES.RIGHT]: 1,
-            offset: (date, step) => date.setDate(date.getDate() + step * 7)
-          },
-          day: {
-            [KEY_CODES.UP]: -7,
-            [KEY_CODES.DOWN]: 7,
-            [KEY_CODES.LEFT]: -1,
-            [KEY_CODES.RIGHT]: 1,
-            offset: (date, step) => {
-              date.setDate(date.getDate() + step);
-            }
-          }
-        };
-        const mode = this.selectionMode;
-        const year = 3.1536e10;
-        const now = this.date.getTime();
-        let newDate = new Date(this.date.getTime());
-        if (mode !== 'range') {
-          while (Math.abs(now - newDate.getTime()) <= year) {
-            let map = mapping[mode];
-            map.offset(newDate, map[keyCode]);
-            if (
-              typeof this.disabledDate === 'function' &&
-              this.disabledDate(newDate)
-            ) {
-              continue;
-            }
-            if (mode !== 'range') {
-              this.$emit('pick', newDate, false);
-            }
-            break;
-          }
         }
       }
     }

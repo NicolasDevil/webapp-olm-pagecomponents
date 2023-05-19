@@ -1,10 +1,10 @@
 <script>
-  import Clickoutside from '../../../src/utils/clickoutside';
-  import Emitter from '../../../src/mixins/emitter';
-  import Migrating from '../../../src/mixins/migrating';
-  import ElButton from '../../../packages/button';
-  import ElButtonGroup from '../../../packages/button-group';
-  import { generateId } from '../../../src/utils/util';
+  import Clickoutside from 'element-ui/src/utils/clickoutside';
+  import Emitter from 'element-ui/src/mixins/emitter';
+  import Migrating from 'element-ui/src/mixins/migrating';
+  import ElButton from 'element-ui/packages/button';
+  import ElButtonGroup from 'element-ui/packages/button-group';
+  import { generateId } from 'element-ui/src/utils/util';
 
   export default {
     name: 'ElDropdown',
@@ -27,17 +27,6 @@
     },
 
     props: {
-      id: {
-        type:String,
-        default: ''
-      },
-      buttonId: {
-        type:String
-      },
-      arrowId: {
-        type:String
-      },
-      disabled:Boolean,
       trigger: {
         type: String,
         default: 'hover'
@@ -52,9 +41,6 @@
         type: Boolean,
         default: true
       },
-      triggerAriaLabel: {
-        type: String
-      },
       placement: {
         type: String,
         default: 'bottom-end'
@@ -68,24 +54,19 @@
       },
       hideTimeout: {
         type: Number,
-        default: 200
-      },
-      ariaLabel: {
-        type: String
+        default: 150
       },
       tabindex: {
         type: Number,
         default: 0
       },
-      freezeMenu: {
+      disabled: {
         type: Boolean,
         default: false
-      },
-      defaultOption: { }
+      }
     },
 
     data() {
-      let id = this.id;
       return {
         timeout: null,
         visible: false,
@@ -94,7 +75,7 @@
         menuItemsArray: null,
         dropdownElm: null,
         focusing: false,
-        listId: this.id ? `${this.id}-menu` :  `dropdown-menu-${generateId()}`
+        listId: `dropdown-menu-${generateId()}`
       };
     },
 
@@ -134,39 +115,14 @@
         };
       },
       show() {
-        const _this = this;
-        if (this.triggerElm.disabled) return;
-        this.triggerElm.setAttribute('aria-expanded', true);
+        if (this.disabled) return;
         clearTimeout(this.timeout);
-
         this.timeout = setTimeout(() => {
           this.visible = true;
-          setTimeout(()=>{
-            let nextIndex = 0;
-            this.resetTabindex(this.menuItems[nextIndex]);
-            if (_this.defaultOption) {
-              let defaultItem;
-              if (this.menuItems[0].getAttribute('data-id')) {
-                defaultItem = _this.menuItemsArray.filter((item)=>{
-                  return item.getAttribute('data-id') === `${_this.defaultOption}`;
-                })[0];
-              } else if (!isNaN(Number(_this.defaultOption))) {
-                defaultItem = this.menuItems[_this.defaultOption];
-              }
-              defaultItem && defaultItem.focus();
-            } else {
-              this.menuItems[nextIndex].focus();
-            }
-          }, 200);
         }, this.trigger === 'click' ? 0 : this.showTimeout);
       },
       hide() {
-        if (this.freezeMenu) {
-          return;
-        }
-        if (this.triggerElm.disabled) return;
-        this.triggerElm.setAttribute('aria-expanded', 'false');
-        this.triggerElm.removeAttribute('aria-activedescendant');
+        if (this.disabled) return;
         this.removeTabindex();
         if (this.tabindex >= 0) {
           this.resetTabindex(this.triggerElm);
@@ -176,38 +132,24 @@
           this.visible = false;
         }, this.trigger === 'click' ? 0 : this.hideTimeout);
       },
-      handleClick(ev, force) {
-        if (this.triggerElm.disabled) return;
-        if (!force && ev.keyCode) {
-          return;
-        }
+      handleClick() {
+        if (this.disabled) return;
         if (this.visible) {
-          this.hide(ev);
+          this.hide();
         } else {
-          this.show(ev);
+          this.show();
         }
-      },
-      focusMenuItem(i) {
-        this.removeTabindex();
-        let el = this.menuItems[0];
-        this.resetTabindex(el);
-        el.focus();
-        this.triggerElm.setAttribute('aria-activedescendant', el.id)
       },
       handleTriggerKeyDown(ev) {
         const keyCode = ev.keyCode;
         if ([38, 40].indexOf(keyCode) > -1) { // up/down
           this.removeTabindex();
-          let el = this.menuItems[0]
           this.resetTabindex(this.menuItems[0]);
           this.menuItems[0].focus();
-          this.triggerElm.setAttribute('aria-activedescendant', this.menuItems[0].id)
-
           ev.preventDefault();
           ev.stopPropagation();
-        } else if ([13, 32].indexOf(keyCode) > -1) { // space enter选中
-          ev.preventDefault();
-          this.handleClick(ev, true);
+        } else if (keyCode === 13) { // space enter选中
+          this.handleClick();
         } else if ([9, 27].indexOf(keyCode) > -1) { // tab || esc
           this.hide();
         }
@@ -220,33 +162,29 @@
         let nextIndex;
         if ([38, 40].indexOf(keyCode) > -1) { // up/down
           if (keyCode === 38) { // up
-            nextIndex = currentIndex === 0 ? max : currentIndex - 1;
+            nextIndex = currentIndex !== 0 ? currentIndex - 1 : 0;
           } else { // down
-            nextIndex = currentIndex === max ? 0 : currentIndex + 1 ;
+            nextIndex = currentIndex < max ? currentIndex + 1 : max;
           }
           this.removeTabindex();
           this.resetTabindex(this.menuItems[nextIndex]);
           this.menuItems[nextIndex].focus();
-          this.triggerElm.setAttribute('aria-activedescendant', this.menuItems[nextIndex].id);
-
           ev.preventDefault();
           ev.stopPropagation();
-        } else if ([13, 32].indexOf(keyCode) > -1) { // enter选中
+        } else if (keyCode === 13) { // enter选中
           this.triggerElmFocus();
           target.click();
           if (this.hideOnClick) { // click关闭
             this.visible = false;
           }
         } else if ([9, 27].indexOf(keyCode) > -1) { // tab // esc
-          ev.preventDefault();
-          ev.stopPropagation();
           this.hide();
           this.triggerElmFocus();
         }
       },
       resetTabindex(ele) { // 下次tab时组件聚焦元素
         this.removeTabindex();
-        ele&&ele.setAttribute('tabindex', '0'); // 下次期望的聚焦元素
+        ele.setAttribute('tabindex', '0'); // 下次期望的聚焦元素
       },
       removeTabindex() {
         this.triggerElm.setAttribute('tabindex', '-1');
@@ -255,25 +193,18 @@
         });
       },
       initAria() {
-        let dropMenuId = this.id || this.listId;
+        this.dropdownElm.setAttribute('id', this.listId);
+        this.triggerElm.setAttribute('aria-haspopup', 'list');
+        this.triggerElm.setAttribute('aria-controls', this.listId);
 
-        this.dropdownElm.setAttribute('id', dropMenuId);
-        this.triggerElm.setAttribute('aria-haspopup', 'listbox');
-        this.triggerElm.setAttribute('aria-expanded', 'false');
-        this.triggerElm.setAttribute('aria-controls', dropMenuId);
-        this.triggerElm.setAttribute('role', 'button');
-
-        if (!this.splitButton) {
-          this.$el.setAttribute('id', dropMenuId + '-trigger');
+        if (!this.splitButton) { // 自定义
+          this.triggerElm.setAttribute('role', 'button');
           this.triggerElm.setAttribute('tabindex', this.tabindex);
           this.triggerElm.setAttribute('class', (this.triggerElm.getAttribute('class') || '') + ' el-dropdown-selfdefine'); // 控制
-        } else {
-          this.arrowId ? this.triggerElm.setAttribute('id', this.arrowId) : this.triggerElm.setAttribute('id', dropMenuId + '-trigger');
-          this.buttonId ? this.$refs.action.$el.setAttribute('id', this.buttonId) : this.$refs.action.$el.setAttribute('id', dropMenuId + '-action');
         }
       },
       initEvent() {
-        let { trigger, show, hide, handleClick,handlePointerEvent, splitButton, handleTriggerKeyDown, handleItemKeyDown } = this;
+        let { trigger, show, hide, handleClick, splitButton, handleTriggerKeyDown, handleItemKeyDown } = this;
         this.triggerElm = splitButton
           ? this.$refs.trigger.$el
           : this.$slots.default[0].elm;
@@ -299,7 +230,6 @@
           this.triggerElm.addEventListener('mouseleave', hide);
           dropdownElm.addEventListener('mouseenter', show);
           dropdownElm.addEventListener('mouseleave', hide);
-          this.triggerElm.addEventListener('click', handleClick);
         } else if (trigger === 'click') {
           this.triggerElm.addEventListener('click', handleClick);
         }
@@ -324,33 +254,38 @@
     },
 
     render(h) {
-      let { hide, splitButton, type, dropdownSize, ariaLabel, visible, disabled, triggerAriaLabel } = this;
+      let { hide, splitButton, type, dropdownSize, disabled } = this;
 
       const handleMainButtonClick = (event) => {
         this.$emit('click', event);
         hide();
       };
 
-      let triggerElm = !splitButton
-        ? this.$slots.default
-        : (<el-button-group>
-          <el-button ref="action" type={type} size={dropdownSize} disabled={disabled} nativeOn-click={handleMainButtonClick} aria-label={ariaLabel}>
+      let triggerElm = null;
+      if (splitButton) {
+        triggerElm = <el-button-group>
+          <el-button type={type} size={dropdownSize} nativeOn-click={handleMainButtonClick} disabled={disabled}>
             {this.$slots.default}
           </el-button>
-          <el-button ref="trigger"  aria-label={triggerAriaLabel} type={type} disabled={disabled} size={dropdownSize} class="el-dropdown__caret-button">
-            <i class="el-dropdown__icon icon-ng-down"></i>
+          <el-button ref="trigger" type={type} size={dropdownSize} class="el-dropdown__caret-button" disabled={disabled}>
+            <i class="el-dropdown__icon el-icon-arrow-down"></i>
           </el-button>
-        </el-button-group>);
-      if (splitButton) {
-        return (<div class="el-dropdown" v-clickoutside={hide}>
-          {triggerElm}
-        {this.$slots.dropdown}
-      </div>);
+        </el-button-group>;
+      } else {
+        triggerElm = this.$slots.default;
+        const vnodeData = triggerElm[0].data || {};
+        let { attrs = {} } = vnodeData;
+        if (disabled && !attrs.disabled) {
+          attrs.disabled = true;
+          vnodeData.attrs = attrs;
+        }
       }
+      const menuElm = disabled ? null : this.$slots.dropdown;
+
       return (
-        <div class="el-dropdown" v-clickoutside={hide} aria-label={ariaLabel}>
+        <div class="el-dropdown" v-clickoutside={hide} aria-disabled={disabled}>
           {triggerElm}
-          {this.$slots.dropdown}
+          {menuElm}
         </div>
       );
     }

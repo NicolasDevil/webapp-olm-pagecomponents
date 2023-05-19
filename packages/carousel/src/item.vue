@@ -7,14 +7,10 @@
       'el-carousel__item--card': $parent.type === 'card',
       'is-in-stage': inStage,
       'is-hover': hover,
-      'is-vhidden': vhidden,
       'is-animating': animating
     }"
-    :aria-hidden="active ? false : true"
     @click="handleItemClick"
-    :style="itemStyle"
-    :tabIndex="active ? -1 : null"
-    :ref="active ? 'carousel_active_item' : ''">
+    :style="itemStyle">
     <div
       v-if="$parent.type === 'card'"
       v-show="!active"
@@ -25,24 +21,18 @@
 </template>
 
 <script>
-  import { autoprefixer } from '../../../src/utils/util';
-  import Locale from '../../../src/mixins/locale';
+  import { autoprefixer } from 'element-ui/src/utils/util';
   const CARD_SCALE = 0.83;
-
   export default {
     name: 'ElCarouselItem',
-    mixins: [Locale],
 
     props: {
       name: String,
-      carouselBtnDescribedby: String,
       label: {
         type: [String, Number],
         default: ''
-      },
-      focusitemSelector: {type: String, default: 'button'}
+      }
     },
-
 
     data() {
       return {
@@ -52,8 +42,7 @@
         active: false,
         ready: false,
         inStage: false,
-        animating: false,
-        vhidden: false
+        animating: false
       };
     },
 
@@ -84,24 +73,15 @@
 
       calcTranslate(index, activeIndex, isVertical) {
         const distance = this.$parent.$el[isVertical ? 'offsetHeight' : 'offsetWidth'];
-        // console.log(index, activeIndex, isVertical);
         return distance * (index - activeIndex);
       },
 
       translateItem(index, activeIndex, oldIndex) {
-        this.vhidden = false;
         const parentType = this.$parent.type;
-        const parentfocus = this.$parent.focus;
         const parentDirection = this.parentDirection;
         const length = this.$parent.items.length;
         if (parentType !== 'card' && oldIndex !== undefined) {
           this.animating = index === activeIndex || index === oldIndex;
-          setTimeout(() => {
-            this.vhidden = index !== activeIndex;
-            if (index === activeIndex && parentfocus === true && this.$refs.carousel_active_item.querySelector(this.focusitemSelector)) {
-              this.$refs.carousel_active_item.querySelector(this.focusitemSelector).focus();
-            }
-          }, 400);
         }
         if (index !== activeIndex && length > 2 && this.$parent.loop) {
           index = this.processIndex(index, activeIndex, length);
@@ -118,6 +98,7 @@
           this.active = index === activeIndex;
           const isVertical = parentDirection === 'vertical';
           this.translate = this.calcTranslate(index, activeIndex, isVertical);
+          this.scale = 1;
         }
         this.ready = true;
       },

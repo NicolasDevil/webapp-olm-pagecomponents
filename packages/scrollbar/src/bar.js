@@ -1,4 +1,4 @@
-import { on, off } from '../../../src/utils/dom';
+import { on, off } from 'element-ui/src/utils/dom';
 import { renderThumbStyle, BAR_MAP } from './util';
 
 /* istanbul ignore next */
@@ -40,9 +40,12 @@ export default {
 
   methods: {
     clickThumbHandler(e) {
+      // prevent click event of right button
+      if (e.ctrlKey || e.button === 2) {
+        return;
+      }
       this.startDrag(e);
       this[this.bar.axis] = (e.currentTarget[this.bar.offset] - (e[this.bar.client] - e.currentTarget.getBoundingClientRect()[this.bar.direction]));
-      this.$emit('barScroll', e);
     },
 
     clickTrackHandler(e) {
@@ -69,11 +72,10 @@ export default {
       if (!prevPage) return;
 
       const offset = ((this.$el.getBoundingClientRect()[this.bar.direction] - e[this.bar.client]) * -1);
-      if (this.$refs.thumb) {
-        const thumbClickPosition = (this.$refs.thumb[this.bar.offset] - prevPage);
-        const thumbPositionPercentage = ((offset - thumbClickPosition) * 100 / this.$el[this.bar.offset]);
-        this.wrap[this.bar.scroll] = (thumbPositionPercentage * this.wrap[this.bar.scrollSize] / 100);
-      }
+      const thumbClickPosition = (this.$refs.thumb[this.bar.offset] - prevPage);
+      const thumbPositionPercentage = ((offset - thumbClickPosition) * 100 / this.$el[this.bar.offset]);
+
+      this.wrap[this.bar.scroll] = (thumbPositionPercentage * this.wrap[this.bar.scrollSize] / 100);
     },
 
     mouseUpDocumentHandler(e) {
@@ -81,7 +83,6 @@ export default {
       this[this.bar.axis] = 0;
       off(document, 'mousemove', this.mouseMoveDocumentHandler);
       document.onselectstart = null;
-      this.$emit('barScroll', false);
     }
   },
 

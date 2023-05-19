@@ -1,13 +1,8 @@
 <template>
   <div
     :class="carouselClasses"
-    @focusout="handleFocusOut"
-    @focusin="handleFocusIn"
     @mouseenter.stop="handleMouseEnter"
-    @mouseleave.stop="handleMouseLeave"
-    role="complementary"
-    :aria-label="carousel"
-  >
+    @mouseleave.stop="handleMouseLeave">
     <div
       class="el-carousel__container"
       :style="{ height: height }">
@@ -15,28 +10,26 @@
         v-if="arrowDisplay"
         name="carousel-arrow-left">
         <button
-          :aria-label="letBtn"
           type="button"
           v-show="(arrow === 'always' || hover) && (loop || activeIndex > 0)"
           @mouseenter="handleButtonEnter('left')"
           @mouseleave="handleButtonLeave"
           @click.stop="throttledArrowClick(activeIndex - 1)"
           class="el-carousel__arrow el-carousel__arrow--left">
-          <i class="icon-ng-left"></i>
+          <i class="el-icon-arrow-left"></i>
         </button>
       </transition>
       <transition
         v-if="arrowDisplay"
         name="carousel-arrow-right">
         <button
-          :aria-label="rightBtn"
           type="button"
           v-show="(arrow === 'always' || hover) && (loop || activeIndex < items.length - 1)"
           @mouseenter="handleButtonEnter('right')"
           @mouseleave="handleButtonLeave"
           @click.stop="throttledArrowClick(activeIndex + 1)"
           class="el-carousel__arrow el-carousel__arrow--right">
-          <i class="icon-ng-right"></i>
+          <i class="el-icon-arrow-right"></i>
         </button>
       </transition>
       <slot></slot>
@@ -53,27 +46,22 @@
           { 'is-active': index === activeIndex }]"
         @mouseenter="throttledIndicatorHover(index)"
         @click.stop="handleIndicatorClick(index)">
-        <button class="el-carousel__button" :aria-label="carouselBtn + ' ' + (index+1)" :aria-describedby="item.carouselBtnDescribedby">
+        <button class="el-carousel__button">
           <span v-if="hasLabel">{{ item.label }}</span>
         </button>
       </li>
     </ul>
-<!--    Add a live region to announce the slide number when using the previous/next buttons-->
-    <div aria-live="polite" aria-atomic="true" class="liveregion" style="visibility: hidden"></div>
   </div>
 </template>
 
 <script>
 import throttle from 'throttle-debounce/throttle';
-import { addResizeListener, removeResizeListener } from '../../../src/utils/resize-event';
-import Locale from '../../../src/mixins/locale';
+import { addResizeListener, removeResizeListener } from 'element-ui/src/utils/resize-event';
 
 export default {
   name: 'ElCarousel',
-  mixins: [Locale],
 
   props: {
-    ariaLabel: String,
     initialIndex: {
       type: Number,
       default: 0
@@ -120,12 +108,7 @@ export default {
       activeIndex: -1,
       containerWidth: 0,
       timer: null,
-      hover: false,
-      focus: false,
-      letBtn: this.t('message.common.leftArrow') || 'left arrow button',
-      rightBtn: this.t('message.common.rightArrow') || 'right arrow button',
-      carouselBtn: this.t('el.carousel.carouselPage') || 'carousel button',
-      carousel: this.t('el.carousel.carouselTitle') || 'Carousel '
+      hover: false
     };
   },
 
@@ -142,9 +125,6 @@ export default {
       const classes = ['el-carousel', 'el-carousel--' + this.direction];
       if (this.type === 'card') {
         classes.push('el-carousel--card');
-      }
-      if (this.focus === true) {
-        classes.push('is-tab');
       }
       return classes;
     },
@@ -179,20 +159,15 @@ export default {
 
     loop() {
       this.setActiveItem(this.activeIndex);
+    },
+
+    interval() {
+      this.pauseTimer();
+      this.startTimer();
     }
   },
 
   methods: {
-    handleFocusIn() {
-      this.focus = true;
-      this.pauseTimer();
-    },
-
-    handleFocusOut() {
-      this.focus = false;
-      this.startTimer();
-    },
-
     handleMouseEnter() {
       this.hover = true;
       this.pauseTimer();
@@ -261,6 +236,11 @@ export default {
       this.timer = setInterval(this.playSlides, this.interval);
     },
 
+    resetTimer() {
+      this.pauseTimer();
+      this.startTimer();
+    },
+
     setActiveItem(index) {
       if (typeof index === 'string') {
         const filteredItems = this.items.filter(item => item.name === index);
@@ -285,6 +265,7 @@ export default {
       if (oldIndex === this.activeIndex) {
         this.resetItemPosition(oldIndex);
       }
+      this.resetTimer();
     },
 
     prev() {

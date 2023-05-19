@@ -1,56 +1,38 @@
 <template>
   <transition name="el-zoom-in-top" @after-leave="doDestroy">
-    <div class="el-color-dropdown" v-show="showPopper" role="dialog" :aria-label="ariaLabel" @keydown="handleKeyDown">
-      <div class="el-color-dropdown__header">
-        <div class="el-color-dropdown__headertitle">{{title}}</div>
-        <button type="button" class="el-color-dropdown__headerbtn" :aria-label="t('el.dialog.close')" ref="close" @click="handleClose" role="button">
-          <i class="el-color-dropdown__close icon-exit" tabindex="0" id="close" :aria-label="t('el.dialog.close')" role="button"></i>
-        </button>
-      </div>
+    <div
+      class="el-color-dropdown"
+      v-show="showPopper">
       <div class="el-color-dropdown__main-wrapper">
-        <sv-panel
-                ref="sl"
-                :color="color"
-                @change="handleChange"
-                tabindex="0"
-                role="group"
-                :svPanelAriaLabel="svPanelAriaLabel"
-                :arrowKeyAriaLabel="arrowKeyAriaLabel"
-        ></sv-panel>
-        <hue-slider
-                ref="hue"
-                :color="color"
-                vertical
-                style="float: right;"
-                @change="handleChange"
-                tabindex="0"
-                role="group"
-                :huePanelAriaLabel="huePanelAriaLabel"
-                :arrowKeyAriaLabel="arrowKeyAriaLabel">
-        </hue-slider>
+        <hue-slider ref="hue" :color="color" vertical style="float: right;"></hue-slider>
+        <sv-panel ref="sl" :color="color"></sv-panel>
       </div>
-      <!--      <alpha-slider v-if="showAlpha" ref="alpha" :color="color"></alpha-slider>-->
+      <alpha-slider v-if="showAlpha" ref="alpha" :color="color"></alpha-slider>
+      <predefine v-if="predefine" :color="color" :colors="predefine"></predefine>
       <div class="el-color-dropdown__btns">
-        <div class="el-color-dropdown__color" :style="'background-color:'+ currentValue"></div>
-        <div>HEX</div>
-        <div class="el-color-dropdown__input">
+        <span class="el-color-dropdown__value">
           <el-input
-            :value="currentValue"
-            role="textbox"
-            @input="debounceHandleInput"
-            :max=7
-            :min=7
-            ref="input"
-            :aria-label="ariaLabel"
-            :aria-labelledby="ariaLabelledby"
-            @keydown.enter.native="handleEnter"
-            id="colorInput"
-          >
+            v-model="customInput"
+            @keyup.native.enter="handleConfirm"
+            @blur="handleConfirm"
+            :validate-event="false"
+            size="mini">
           </el-input>
-        </div>
-        <!--        <span class="el-color-dropdown__value">{{ currentColor }}</span>-->
-        <!--        <a href="JavaScript:" class="el-color-dropdown__link-btn" @click="$emit('clear')">{{ t('el.colorpicker.clear') }}</a>-->
-        <!--        <button class="el-color-dropdown__btn" @click="confirmValue">{{ t('el.colorpicker.confirm') }}</button>-->
+        </span>
+        <el-button
+          size="mini"
+          type="text"
+          class="el-color-dropdown__link-btn"
+          @click="$emit('clear')">
+          {{ t('el.colorpicker.clear') }}
+        </el-button>
+        <el-button
+          plain
+          size="mini"
+          class="el-color-dropdown__btn"
+          @click="confirmValue">
+          {{ t('el.colorpicker.confirm') }}
+        </el-button>
       </div>
     </div>
   </transition>
@@ -60,10 +42,11 @@
   import SvPanel from './sv-panel';
   import HueSlider from './hue-slider';
   import AlphaSlider from './alpha-slider';
-  import Popper from '../../../../src/utils/vue-popper';
-  import Locale from '../../../../src/mixins/locale';
-  import debounce from "throttle-debounce/debounce";
-  import {getFocusableItems} from "../../../../src/utils/accessibility";
+  import Predefine from './predefine';
+  import Popper from 'element-ui/src/utils/vue-popper';
+  import Locale from 'element-ui/src/mixins/locale';
+  import ElInput from 'element-ui/packages/input';
+  import ElButton from 'element-ui/packages/button';
 
   export default {
     name: 'el-color-picker-dropdown',
@@ -73,7 +56,10 @@
     components: {
       SvPanel,
       HueSlider,
-      AlphaSlider
+      AlphaSlider,
+      ElInput,
+      ElButton,
+      Predefine
     },
 
     props: {
@@ -81,114 +67,35 @@
         required: true
       },
       showAlpha: Boolean,
-      debounce: {
-        type: Number,
-        default: 700
-      },
-      title:{
-        type: String,
-        default: 'Color'
-      },
-      ariaLabel: String,
-      ariaLabelledby: String,
-      svPanelAriaLabel: String,
-      huePanelAriaLabel: String,
-      arrowKeyAriaLabel: String
+      predefine: Array
     },
 
     data() {
       return {
-        currentValue: "#FFFFFF",
-        tempValue:""
+        customInput: ''
       };
     },
 
     computed: {
-      // currentColor() {
-      //   const parent = this.$parent;
-      //   return !parent.value && !parent.showPanelColor ? '' : parent.color.value;
-      // }
+      currentColor() {
+        const parent = this.$parent;
+        return !parent.value && !parent.showPanelColor ? '' : parent.color.value;
+      }
     },
 
     methods: {
-      // confirmValue() {
-      //   this.$emit('pick');
-      // },
-      handleColorInput(value) {
-        // if (value === '') {
-        //   return;
-        // }
-        // let isFormatColor = /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(value);
-        // if(isFormatColor){
-        //   this.currentValue = value;
-        //   this.color.fromString(value);
-        //   this.$emit('change', value);
-        // }
-        this.tempValue=value;
+      confirmValue() {
+        this.$emit('pick');
       },
-      handleChange(){
-        this.currentValue = this.$parent.color.value;
-        this.$emit('change', this.currentValue);
-      },
-      handleClose(){
-        this.$emit('closePicker');
-      },
-      handleEnter(){
-        let isFormatColor = /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(this.tempValue);
-        if(isFormatColor){
-          this.currentValue = this.tempValue;
-          this.color.fromString(this.tempValue);
-          this.$emit('change', this.tempValue);
-        }else {
-          this.$refs.input.currentValue=this.currentValue;
-        }
-      },
-      handleKeyDown(e) {
-        e.stopPropagation();
-        if (e.keyCode == 27) {
-          this.handleClose();
-          return;
-        }
 
-        let first = document.querySelector('#svpanel');
-        let latest = document.querySelector('#close');
-        let hueSlider = document.querySelector('#hueSlider');
-        let colorInput = document.querySelector('#colorInput');
-
-        if(e.shiftKey){
-          if( e.keyCode == 9 && e.target == first){
-            e.preventDefault();
-            latest.focus();
-          }
-        }else{
-          if (hueSlider && e.target === hueSlider && e.keyCode == 9){
-            e.preventDefault();
-            colorInput.focus();
-          }
-          if (colorInput && e.target === colorInput && e.keyCode == 9){
-            e.preventDefault();
-            latest.focus();
-          }
-          if (latest && e.target === latest && e.keyCode == 9) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
+      handleConfirm() {
+        this.color.fromString(this.customInput);
       }
     },
 
     mounted() {
       this.$parent.popperElm = this.popperElm = this.$el;
       this.referenceElm = this.$parent.$el;
-      this.currentValue = this.$parent.value;
-      // this.$refs.input.$refs.input.focus();
-      document.querySelector('#svpanel').focus();
-    },
-
-    created() {
-      this.debounceHandleInput = debounce(this.debounce, value => {
-        this.handleColorInput(value);
-      });
     },
 
     watch: {
@@ -200,6 +107,13 @@
             hue && hue.update();
             alpha && alpha.update();
           });
+        }
+      },
+
+      currentColor: {
+        immediate: true,
+        handler(val) {
+          this.customInput = val;
         }
       }
     }

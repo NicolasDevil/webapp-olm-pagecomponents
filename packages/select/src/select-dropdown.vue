@@ -1,7 +1,6 @@
 <template>
   <div
-    tabindex="-1"
-    class="el-select-dropdown"
+    class="el-select-dropdown el-popper"
     :class="[{ 'is-multiple': $parent.multiple }, popperClass]"
     :style="{ minWidth: minWidth }">
     <slot></slot>
@@ -9,7 +8,7 @@
 </template>
 
 <script type="text/babel">
-  import Popper from '../../../src/utils/vue-popper';
+  import Popper from 'element-ui/src/utils/vue-popper';
 
   export default {
     name: 'ElSelectDropdown',
@@ -19,7 +18,6 @@
     mixins: [Popper],
 
     props: {
-      id: String,
       placement: {
         default: 'bottom-start'
       },
@@ -34,6 +32,15 @@
             gpuAcceleration: false
           };
         }
+      },
+
+      visibleArrow: {
+        default: true
+      },
+
+      appendToBody: {
+        type: Boolean,
+        default: true
       }
     },
 
@@ -46,30 +53,20 @@
     computed: {
       popperClass() {
         return this.$parent.popperClass;
-      },
-      parent() {
-        var parent = this.$parent;
-        while (parent.$options.componentName !== 'ElSelect') {
-          parent = parent.$parent;
-        }
-        return parent;
       }
     },
 
     watch: {
-      'parent.inputWidth'() {
+      '$parent.inputWidth'() {
         this.minWidth = this.$parent.$el.getBoundingClientRect().width + 'px';
       }
     },
 
     mounted() {
-      this.referenceElm = this.parent.$refs.reference.$el;
-      this.parent.popperElm = this.popperElm = this.$el;
+      this.referenceElm = this.$parent.$refs.reference.$el;
+      this.$parent.popperElm = this.popperElm = this.$el;
       this.$on('updatePopper', () => {
-        this.minWidth = this.$parent.$el.getBoundingClientRect().width + 'px';
-        if (this.parent.visible && this.appendToBody) {
-          this.updatePopper();
-        }
+        if (this.$parent.visible) this.updatePopper();
       });
       this.$on('destroyPopper', this.destroyPopper);
     }

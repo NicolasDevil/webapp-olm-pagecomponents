@@ -1,7 +1,0 @@
-.country-icon{
-    width: 24px;
-    height: 14px;
-    background: transparent url(images/country_flag.png) -32px top no-repeat;
-    overflow: hidden;
-    display: inline-block;
-}

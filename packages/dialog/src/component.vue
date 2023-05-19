@@ -1,40 +1,52 @@
 <template>
-  <transition name="dialog-fade">
-    <div role="dialog" :aria-label="title" class="el-dialog__wrapper" v-show="visible" @click.self="handleWrapperClick" @keydown="handleKeyDown">
+  <transition
+    name="dialog-fade"
+    @after-enter="afterEnter"
+    @after-leave="afterLeave">
+    <div
+      v-show="visible"
+      class="el-dialog__wrapper"
+      @click.self="handleWrapperClick">
       <div
-        class="el-dialog"
-        :class="[sizeClass, customClass]"
+        role="dialog"
+        :key="key"
+        aria-modal="true"
+        :aria-label="title || 'dialog'"
+        :class="['el-dialog', { 'is-fullscreen': fullscreen, 'el-dialog--center': center }, customClass]"
         ref="dialog"
         :style="style">
-        <div class="el-dialog__textarea">
-            <div class="el-dialog__header">
-              <slot name="title">
-                <h2 class="el-dialog__title">{{title}}</h2>
-              </slot>
-            </div>
-        <div class="el-dialog__body" v-if="rendered"><slot></slot></div>
+        <div class="el-dialog__header">
+          <slot name="title">
+            <span class="el-dialog__title">{{ title }}</span>
+          </slot>
+          <button
+            type="button"
+            class="el-dialog__headerbtn"
+            aria-label="Close"
+            v-if="showClose"
+            @click="handleClose">
+            <i class="el-dialog__close el-icon el-icon-close"></i>
+          </button>
         </div>
+        <div class="el-dialog__body" v-if="rendered"><slot></slot></div>
         <div class="el-dialog__footer" v-if="$slots.footer">
           <slot name="footer"></slot>
         </div>
-        <button type="button" class="el-dialog__headerbtn" :aria-label="t('el.dialog.close')" ref="close"
-                v-if="showClose" @click="handleClose">
-          <i class="el-dialog__close icon-exit"></i>
-        </button>
       </div>
     </div>
   </transition>
 </template>
 
 <script>
-  import Popup from '../../../src/utils/popup';
-  import emitter from '../../../src/mixins/emitter';
-  import Locale from '../../../src/mixins/locale';
-  import {getFocusableItems} from "../../../src/utils/accessibility";
+  import Popup from 'element-ui/src/utils/popup';
+  import Migrating from 'element-ui/src/mixins/migrating';
+  import emitter from 'element-ui/src/mixins/emitter';
 
   export default {
     name: 'ElDialog',
-    mixins: [Popup, emitter, Locale],
+
+    mixins: [Popup, emitter, Migrating],
+
     props: {
       title: {
         type: String,
@@ -50,10 +62,12 @@
         type: Boolean,
         default: true
       },
+
       appendToBody: {
         type: Boolean,
         default: false
       },
+
       lockScroll: {
         type: Boolean,
         default: true
@@ -74,10 +88,9 @@
         default: true
       },
 
-      size: {
-        type: String,
-        default: 'small'
-      },
+      width: String,
+
+      fullscreen: Boolean,
 
       customClass: {
         type: String,
@@ -86,74 +99,68 @@
 
       top: {
         type: String,
-        default: '15%'
+        default: '15vh'
       },
       beforeClose: Function,
-      focusOnOpen: {
-        type: String,
-        default: ''
+      center: {
+        type: Boolean,
+        default: false
       },
-      focusOnClose: {
-        type: String,
-        default: ''
-      },
+
+      destroyOnClose: Boolean
     },
+
+    data() {
+      return {
+        closed: false,
+        key: 0
+      };
+    },
+
     watch: {
       visible(val) {
-        this.$emit('update:visible', val);
         if (val) {
+          this.closed = false;
           this.$emit('open');
           this.$el.addEventListener('scroll', this.updatePopper);
           this.$nextTick(() => {
             this.$refs.dialog.scrollTop = 0;
-            if (this.focusOnOpen) {
-                this.focusElement(this.focusOnOpen,false,true);
-            }else {
-              this.focusElement(this.$refs.close);
-            }
           });
           if (this.appendToBody) {
             document.body.appendChild(this.$el);
           }
         } else {
           this.$el.removeEventListener('scroll', this.updatePopper);
-          this.$emit('close');
-          this.focusElement(this.focusOnClose,true);
+          if (!this.closed) this.$emit('close');
+          if (this.destroyOnClose) {
+            this.$nextTick(() => {
+              this.key++;
+            });
+          }
         }
       }
     },
+
     computed: {
-      sizeClass() {
-        return `el-dialog--${ this.size }`;
-      },
       style() {
-        return this.size === 'full' ? {} : { 'top': this.top };
+        let style = {};
+        if (!this.fullscreen) {
+          style.marginTop = this.top;
+          if (this.width) {
+            style.width = this.width;
+          }
+        }
+        return style;
       }
     },
+
     methods: {
-
-      handleKeyDown(e) {
-        e.stopPropagation();
-        let footer = this.$slots.footer || this.$slots.default;
-        if (e.keyCode == 27) {
-          this.handleClose();
-          return;
-        }
-        let items = getFocusableItems(this.$el);
-        let first = items[0];
-        let latest = items[items.length-1]
-
-        if(e.shiftKey){
-          if( e.keyCode == 9 && e.target == first){
-            e.preventDefault();
-            latest.focus();
+      getMigratingConfig() {
+        return {
+          props: {
+            'size': 'size is removed.'
           }
-        }else{
-          if (latest && e.target === latest && e.keyCode == 9) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
+        };
       },
       handleWrapperClick() {
         if (!this.closeOnClickModal) return;
@@ -169,70 +176,29 @@
       hide(cancel) {
         if (cancel !== false) {
           this.$emit('update:visible', false);
-          this.$emit('visible-change', false);
+          this.$emit('close');
+          this.closed = true;
         }
       },
       updatePopper() {
         this.broadcast('ElSelectDropdown', 'updatePopper');
         this.broadcast('ElDropdownMenu', 'updatePopper');
       },
-      getFocusElement(selector){
-        let box = this.$slots.footer ;
-        function getCanFocusEl(box,selector){
-          let els = box.querySelectorAll(selector);
-          let n = els.length-1;
-          let i =0;
-          let first = els[0];
-          while (first && first.disabled && i <= n){
-            i++;
-            first = els[n];
-          }
-          return first;
-        }
-        let first ;
-        if(box && box.length) {
-          first = getCanFocusEl(box[0].elm, selector);
-        }
-        if(!first){
-          first = getCanFocusEl(this.$slots.default[0].elm,selector)
-        }
-       return first;
+      afterEnter() {
+        this.$emit('opened');
       },
-      focusElement(el,searchInBody,timeout) {
-        let ele;
-        if (!el) {
-          return;
-        }
-        if(typeof(el) === 'string'){
-          var container = this.$el;
-          if(searchInBody){
-            container = document.body;
-            ele = container.querySelector(el);
-          }else{
-            ele = this.getFocusElement(el)
-          }
-
-          if(!ele){
-            return;
-          }
-        }else{
-          ele = el;
-        }
-        if(timeout){
-          setTimeout(function () {
-            ele.focus()
-          },500);
-        }
-        ele.focus();
+      afterLeave() {
+        this.$emit('closed');
       }
     },
+
     mounted() {
-      if (this.appendToBody && this.$el) {
-        document.body.appendChild(this.$el);
-      }
       if (this.visible) {
         this.rendered = true;
         this.open();
+        if (this.appendToBody) {
+          document.body.appendChild(this.$el);
+        }
       }
     },
 

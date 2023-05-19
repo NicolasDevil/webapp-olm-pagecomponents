@@ -1,33 +1,39 @@
 <template>
-  <button :disabled="disabled" class="el-button"
+  <button
+    class="el-button"
     @click="handleClick"
-          @keyup="showBorder = true"
-          @blur="showBorder = false"
+    :disabled="buttonDisabled || loading"
     :autofocus="autofocus"
     :type="nativeType"
     :class="[
-      showBorder ? 'border' : '',
       type ? 'el-button--' + type : '',
-      size ? 'el-button--' + size : '',
+      buttonSize ? 'el-button--' + buttonSize : '',
       {
-        'is-disabled': disabled,
+        'is-disabled': buttonDisabled,
         'is-loading': loading,
-        'is-plain': plain
+        'is-plain': plain,
+        'is-round': round,
+        'is-circle': circle
       }
     ]"
   >
-    <div class="loading—animation" v-if="loading">
-      <div class="bounce1"></div>
-      <div class="bounce2"></div>
-      <div class="bounce3"></div>
-    </div>
-    <i :class="'icon-' + icon" v-if="icon && !loading"></i>
+    <i class="el-icon-loading" v-if="loading"></i>
+    <i :class="icon" v-if="icon && !loading"></i>
     <span v-if="$slots.default"><slot></slot></span>
   </button>
 </template>
 <script>
   export default {
     name: 'ElButton',
+
+    inject: {
+      elForm: {
+        default: ''
+      },
+      elFormItem: {
+        default: ''
+      }
+    },
 
     props: {
       type: {
@@ -46,17 +52,26 @@
       loading: Boolean,
       disabled: Boolean,
       plain: Boolean,
-      autofocus: Boolean
+      autofocus: Boolean,
+      round: Boolean,
+      circle: Boolean
     },
-    data: function () {
-      return {
-        showBorder:false
+
+    computed: {
+      _elFormItemSize() {
+        return (this.elFormItem || {}).elFormItemSize;
+      },
+      buttonSize() {
+        return this.size || this._elFormItemSize || (this.$ELEMENT || {}).size;
+      },
+      buttonDisabled() {
+        return this.$options.propsData.hasOwnProperty('disabled') ? this.disabled : (this.elForm || {}).disabled;
       }
     },
+
     methods: {
       handleClick(evt) {
         this.$emit('click', evt);
-        this.showBorder = false;
       }
     }
   };

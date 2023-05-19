@@ -1,10 +1,13 @@
 import Picker from '../picker';
 import DatePanel from '../panel/date';
 import DateRangePanel from '../panel/date-range';
+import MonthRangePanel from '../panel/month-range';
 
 const getPanel = function(type) {
   if (type === 'daterange' || type === 'datetimerange') {
     return DateRangePanel;
+  } else if (type === 'monthrange') {
+    return MonthRangePanel;
   }
   return DatePanel;
 };
@@ -19,11 +22,9 @@ export default {
       type: String,
       default: 'date'
     },
-    locale: {
-      type: String,
-      default: 'en'
-    }
+    timeArrowControl: Boolean
   },
+
   watch: {
     type(type) {
       if (this.picker) {

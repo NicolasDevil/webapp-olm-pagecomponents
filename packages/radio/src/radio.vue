@@ -1,45 +1,65 @@
 <template>
-  <label class="el-radio" :for="id">
+  <label
+    class="el-radio"
+    :class="[
+      border && radioSize ? 'el-radio--' + radioSize : '',
+      { 'is-disabled': isDisabled },
+      { 'is-focus': focus },
+      { 'is-bordered': border },
+      { 'is-checked': model === label }
+    ]"
+    role="radio"
+    :aria-checked="model === label"
+    :aria-disabled="isDisabled"
+    :tabindex="tabIndex"
+    @keydown.space.stop.prevent="model = isDisabled ? model : label"
+  >
     <span class="el-radio__input"
       :class="{
         'is-disabled': isDisabled,
-        'is-checked': model === label,
-        'is-focus': focus,
+        'is-checked': model === label
       }"
     >
-      <span class="el-radio__inner"
-            :class="{
-        'border': showBorder
-      }"
-      ></span>
+      <span class="el-radio__inner"></span>
       <input
-        :id="id"
+        ref="radio"
         class="el-radio__original"
         :value="label"
         type="radio"
+        aria-hidden="true"
         v-model="model"
-        ref="focusInput"
         @focus="focus = true"
-        @keydown="keyupHandler"
-        @blur="blurHandler"
+        @blur="focus = false"
+        @change="handleChange"
         :name="name"
         :disabled="isDisabled"
-        :tabIndex="tabIndex"
-        >
+        tabindex="-1"
+        autocomplete="off"
+      >
     </span>
-    <span class="el-radio__label">
+    <span class="el-radio__label" @keydown.stop>
       <slot></slot>
       <template v-if="!$slots.default">{{label}}</template>
     </span>
   </label>
 </template>
 <script>
-  import Emitter from '../../../src/mixins/emitter';
+  import Emitter from 'element-ui/src/mixins/emitter';
 
   export default {
     name: 'ElRadio',
 
     mixins: [Emitter],
+
+    inject: {
+      elForm: {
+        default: ''
+      },
+
+      elFormItem: {
+        default: ''
+      }
+    },
 
     componentName: 'ElRadio',
 
@@ -48,16 +68,15 @@
       label: {},
       disabled: Boolean,
       name: String,
-      id: String
+      border: Boolean,
+      size: String
     },
 
     data() {
       return {
-        focus: false,
-        showBorder: false
+        focus: false
       };
     },
-
     computed: {
       isGroup() {
         let parent = this.$parent;
@@ -71,92 +90,44 @@
         }
         return false;
       },
-
       model: {
         get() {
           return this.isGroup ? this._radioGroup.value : this.value;
         },
-
         set(val) {
           if (this.isGroup) {
             this.dispatch('ElRadioGroup', 'input', [val]);
           } else {
             this.$emit('input', val);
           }
+          this.$refs.radio && (this.$refs.radio.checked = this.model === this.label);
         }
       },
-      data(){
-        return{
-          focus : false,
-          showBorder : false
-        }
+      _elFormItemSize() {
+        return (this.elFormItem || {}).elFormItemSize;
+      },
+      radioSize() {
+        const temRadioSize = this.size || this._elFormItemSize || (this.$ELEMENT || {}).size;
+        return this.isGroup
+          ? this._radioGroup.radioGroupSize || temRadioSize
+          : temRadioSize;
       },
       isDisabled() {
         return this.isGroup
-          ? this._radioGroup.disabled || this.disabled
-          : this.disabled;
+          ? this._radioGroup.disabled || this.disabled || (this.elForm || {}).disabled
+          : this.disabled || (this.elForm || {}).disabled;
       },
       tabIndex() {
-        return this.model === this.label ? 0 : -1;
+        return (this.isDisabled || (this.isGroup && this.model !== this.label)) ? -1 : 0;
       }
     },
+
     methods: {
-      keyupHandler (event) {
-        console.log(event);
-        this.showBorder = true;
-        if (this.isGroup) {
-          if (event.keyCode === 39 || event.keyCode === 40) {
-            this.selectNextItem();
-            event.preventDefault()
-            event.stopPropagation()
-          } else if (event.keyCode === 37| event.keyCode === 38) {
-            this.selectPreviousItem();
-            event.preventDefault()
-            event.stopPropagation()
-          }// else if (event.keyCode === 9 && this.focus) {
-            // console.log('enter blur handler!!!');
-            // this.blurHandler();
-          //}
-        }
-      },
-      blurHandler () {
-        this.focus = false;
-        this.showBorder=false
-      },
-      selectNextItem () {
-        let allRadios = this._radioGroup.$children;
-        let currentIndex = this.getCurrentItemIndex();
-        let nextItemIndex = currentIndex + 1;
-        if (nextItemIndex == allRadios.length) {
-          nextItemIndex = 0;
-        }
-        this.setNewGroupValue(nextItemIndex);
-      },
-      selectPreviousItem () {
-        let allRadios = this._radioGroup.$children;
-        let currentIndex = this.getCurrentItemIndex();
-        let prevItemIndex = currentIndex - 1;
-        if (prevItemIndex < 0) {
-          prevItemIndex = allRadios.length - 1;
-        }
-        this.setNewGroupValue(prevItemIndex);
-      },
-      getCurrentItemIndex () {
-        let allRadios = this._radioGroup.$children;
-        let currentIndex = null;
-        for (let i = 0; i < allRadios.length; i++) {
-          let item = allRadios[i];
-          if (this.model === item.label) {
-            currentIndex = i;
-            break;
-          }
-        }
-        return currentIndex;
-      },
-      setNewGroupValue (itemIndex) {
-        let newValue = this._radioGroup.$children[itemIndex].label;
-        this.dispatch('ElRadioGroup', 'input', [newValue]);
-        this._radioGroup.$children[itemIndex].$refs.focusInput.focus();
+      handleChange() {
+        this.$nextTick(() => {
+          this.$emit('change', this.model);
+          this.isGroup && this.dispatch('ElRadioGroup', 'handleChange', this.model);
+        });
       }
     }
   };

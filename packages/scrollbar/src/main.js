@@ -1,8 +1,8 @@
 // reference https://github.com/noeldelgado/gemini-scrollbar/blob/master/index.js
 
-import { addResizeListener, removeResizeListener } from '../../../src/utils/resize-event';
-import scrollbarWidth from '../../../src/utils/scrollbar-width';
-import { toObject } from '../../../src/utils/util';
+import { addResizeListener, removeResizeListener } from 'element-ui/src/utils/resize-event';
+import scrollbarWidth from 'element-ui/src/utils/scrollbar-width';
+import { toObject } from 'element-ui/src/utils/util';
 import Bar from './bar';
 
 /* istanbul ignore next */
@@ -21,10 +21,9 @@ export default {
     tag: {
       type: String,
       default: 'div'
-    },
-    role: String,
-    id: String
+    }
   },
+
   data() {
     return {
       sizeWidth: '0',
@@ -57,20 +56,10 @@ export default {
         style = gutterStyle;
       }
     }
-    let attrs = {
-      tabindex: -1
-    };
-    if (this.role) {
-      attrs.role = this.role;
-    }
-    if (this.id) {
-      attrs.id = this.id;
-    }
     const view = h(this.tag, {
       class: ['el-scrollbar__view', this.viewClass],
       style: this.viewStyle,
-      ref: 'resize',
-      attrs: attrs
+      ref: 'resize'
     }, this.$slots.default);
     const wrap = (
       <div
@@ -88,15 +77,11 @@ export default {
         wrap,
         <Bar
           move={ this.moveX }
-          size={ this.sizeWidth }
-          onBarScroll={this.barScroll}
-        ></Bar>,
+          size={ this.sizeWidth }></Bar>,
         <Bar
           vertical
           move={ this.moveY }
-          size={ this.sizeHeight }
-          onBarScroll={this.barScroll}
-        ></Bar>
+          size={ this.sizeHeight }></Bar>
       ]);
     } else {
       nodes = ([
@@ -114,12 +99,11 @@ export default {
   methods: {
     handleScroll() {
       const wrap = this.wrap;
+
       this.moveY = ((wrap.scrollTop * 100) / wrap.clientHeight);
       this.moveX = ((wrap.scrollLeft * 100) / wrap.clientWidth);
     },
-    barScroll(e) {
-      this.$emit('barScroll', e);
-    },
+
     update() {
       let heightPercentage, widthPercentage;
       const wrap = this.wrap;

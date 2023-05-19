@@ -3,14 +3,13 @@
     <div
       v-show="visible"
       class="el-loading-mask"
+      :style="{ backgroundColor: background || '' }"
       :class="[customClass, { 'is-fullscreen': fullscreen }]">
       <div class="el-loading-spinner">
-        <svg class="circular" viewBox="25 25 50 50">
-          <!--wbx add begin-->
-          <circle cx="50" cy="50" r="20" stroke-width="2" stroke="#D1D3D7" fill="none"></circle>
-          <!--wbx add end-->
+        <svg v-if="!spinner" class="circular" viewBox="25 25 50 50">
           <circle class="path" cx="50" cy="50" r="20" fill="none"/>
         </svg>
+        <i v-else :class="spinner"></i>
         <p v-if="text" class="el-loading-text">{{ text }}</p>
       </div>
     </div>
@@ -22,6 +21,8 @@
     data() {
       return {
         text: null,
+        spinner: null,
+        background: null,
         fullscreen: true,
         visible: false,
         customClass: ''

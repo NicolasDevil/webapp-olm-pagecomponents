@@ -1,16 +1,20 @@
-let count = 0;
+const getReference = (el, binding, vnode) => {
+  const _ref = binding.expression ? binding.value : binding.arg;
+  const popper = vnode.context.$refs[_ref];
+  if (popper) {
+    if (Array.isArray(popper)) {
+      popper[0].$refs.reference = el;
+    } else {
+      popper.$refs.reference = el;
+    }
+  }
+};
+
 export default {
   bind(el, binding, vnode) {
-    vnode.context.$refs[binding.arg].$refs.reference = el;
-    if(!el.id){
-      // el.id = `popover-content-${count}`;
-
-      // el.setAttribute('aria-describedby', `popover-content-${count}`);
-      const popover = vnode.context.$refs[binding.arg].$refs.popper;
-      if (!popover.getAttribute('id')) {
-        popover.setAttribute('id', `popover-content-${count}`);
-      }
-    }
-    count++;
+    getReference(el, binding, vnode);
+  },
+  inserted(el, binding, vnode) {
+    getReference(el, binding, vnode);
   }
 };

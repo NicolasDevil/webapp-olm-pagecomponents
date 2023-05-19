@@ -1,38 +1,96 @@
 <template>
-    <div class="el-slider" :class="[{ 'is-vertical': vertical, 'el-slider--with-input': showInput },IndicatorClass]">
-        <div class="el-input-number">
-     <span v-if="showInput" class="el-input-number__decrease" :class="{'is-disabled': minDisabled}" @click="decrease">
-       <i class="icon-remove"></i>
-     </span>
-            <span v-if="showInput" class="el-input-number__increase" :class="{'is-disabled': maxDisabled}" @click="increase">
-       <i class="icon-add"></i>
-     </span>
+  <div
+    class="el-slider"
+    :class="{ 'is-vertical': vertical, 'el-slider--with-input': showInput }"
+    role="slider"
+    :aria-valuemin="min"
+    :aria-valuemax="max"
+    :aria-orientation="vertical ? 'vertical': 'horizontal'"
+    :aria-disabled="sliderDisabled"
+  >
+    <el-input-number
+      v-model="firstValue"
+      v-if="showInput && !range"
+      class="el-slider__input"
+      ref="input"
+      @change="emitChange"
+      :step="step"
+      :disabled="sliderDisabled"
+      :controls="showInputControls"
+      :min="min"
+      :max="max"
+      :debounce="debounce"
+      :size="inputSize">
+    </el-input-number>
+    <div
+      class="el-slider__runway"
+      :class="{ 'show-input': showInput, 'disabled': sliderDisabled }"
+      :style="runwayStyle"
+      @click="onSliderClick"
+      ref="slider">
+      <div
+        class="el-slider__bar"
+        :style="barStyle">
+      </div>
+      <slider-button
+        :vertical="vertical"
+        v-model="firstValue"
+        :tooltip-class="tooltipClass"
+        ref="button1">
+      </slider-button>
+      <slider-button
+        :vertical="vertical"
+        v-model="secondValue"
+        :tooltip-class="tooltipClass"
+        ref="button2"
+        v-if="range">
+      </slider-button>
+      <div
+        class="el-slider__stop"
+        v-for="(item, key) in stops"
+        :key="key"
+        :style="getStopStyle(item)"
+        v-if="showStops">
+      </div>
+      <template v-if="markList.length > 0">
+        <div>
+          <div
+            v-for="(item, key) in markList"
+            :style="getStopStyle(item.position)"
+            class="el-slider__stop el-slider__marks-stop"
+            :key="key">
+          </div>
         </div>
-        <div class="el-slider__runway" :class="{ 'show-input': showInput, 'disabled': disabled }" :style="runwayStyle" @click="onSliderClick" ref="slider">
-            <div class="el-slider__bar" :style="barStyle"></div>
-            <slider-button :vertical="vertical" v-model="firstValue" :limit="limit" ref="button1" :always-show-tooltip="alwaysShowTooltip"></slider-button>
-            <slider-button :vertical="vertical" v-model="secondValue" ref="button2" v-if="range" :always-show-tooltip="alwaysShowTooltip"></slider-button>
-            <div class="el-slider__stop" v-for="item in stops" :style="vertical ? { 'bottom': item + '%' } : { 'left': item + '%' }" v-if="showStops"></div>
+        <div class="el-slider__marks">
+          <slider-marker
+            :mark="item.mark" v-for="(item, key) in markList"
+            :key="key"
+            :style="getStopStyle(item.position)">
+          </slider-marker>
         </div>
+      </template>
     </div>
+  </div>
 </template>
 
 <script type="text/babel">
-  import ElInputNumber from '../../../packages/input-number';
+  import ElInputNumber from 'element-ui/packages/input-number';
   import SliderButton from './button.vue';
-  import { getStyle } from '../../../src/utils/dom';
-  import Emitter from '../../../src/mixins/emitter';
+  import SliderMarker from './marker';
+  import Emitter from 'element-ui/src/mixins/emitter';
 
   export default {
     name: 'ElSlider',
 
     mixins: [Emitter],
-    props: {
-      alwaysShowTooltip:Boolean,
-      indicatorType: {
-        type: String,
+
+    inject: {
+      elForm: {
         default: ''
-      },
+      }
+    },
+
+    props: {
       min: {
         type: Number,
         default: 0
@@ -56,6 +114,10 @@
       showInputControls: {
         type: Boolean,
         default: true
+      },
+      inputSize: {
+        type: String,
+        default: 'small'
       },
       showStops: {
         type: Boolean,
@@ -81,15 +143,21 @@
       height: {
         type: String
       },
-      limit:{
-        type: Array,
-        default: () =>{return []}
-      }
+      debounce: {
+        type: Number,
+        default: 300
+      },
+      label: {
+        type: String
+      },
+      tooltipClass: String,
+      marks: Object
     },
 
     components: {
       ElInputNumber,
-      SliderButton
+      SliderButton,
+      SliderMarker
     },
 
     data() {
@@ -97,7 +165,8 @@
         firstValue: null,
         secondValue: null,
         oldValue: null,
-        dragging: false
+        dragging: false,
+        sliderSize: 1
       };
     },
 
@@ -140,21 +209,21 @@
         this.setValues();
       }
     },
+
     methods: {
-      increase() {
-        this.firstValue += this.step;
-      },
-      decrease() {
-        this.firstValue -= this.step;
-      },
       valueChanged() {
         if (this.range) {
-          return ![this.minValue, this.maxValue].every((item, index) => item === this.oldValue[index]);
+          return ![this.minValue, this.maxValue]
+            .every((item, index) => item === this.oldValue[index]);
         } else {
           return this.value !== this.oldValue;
         }
       },
       setValues() {
+        if (this.min > this.max) {
+          console.error('[Element Error][Slider]min should not be greater than max.');
+          return;
+        }
         const val = this.value;
         if (this.range && Array.isArray(val)) {
           if (val[1] < this.min) {
@@ -169,7 +238,6 @@
             this.firstValue = val[0];
             this.secondValue = val[1];
             if (this.valueChanged()) {
-              this.$emit('change', [this.minValue, this.maxValue]);
               this.dispatch('ElFormItem', 'el.form.change', [this.minValue, this.maxValue]);
               this.oldValue = val.slice();
             }
@@ -182,7 +250,6 @@
           } else {
             this.firstValue = val;
             if (this.valueChanged()) {
-              this.$emit('change', val);
               this.dispatch('ElFormItem', 'el.form.change', val);
               this.oldValue = val;
             }
@@ -202,30 +269,47 @@
         } else {
           button = this.firstValue > this.secondValue ? 'button1' : 'button2';
         }
-        this.$refs[button].hideTooltip();
         this.$refs[button].setPosition(percent);
-        setTimeout(()=>{
-          this.$refs[button].setPosition(percent);
-        },100)
       },
+
       onSliderClick(event) {
-        if (this.disabled || this.dragging) return;
+        if (this.sliderDisabled || this.dragging) return;
+        this.resetSize();
         if (this.vertical) {
           const sliderOffsetBottom = this.$refs.slider.getBoundingClientRect().bottom;
-          this.setPosition((sliderOffsetBottom - event.clientY) / this.$sliderSize * 100);
+          this.setPosition((sliderOffsetBottom - event.clientY) / this.sliderSize * 100);
         } else {
           const sliderOffsetLeft = this.$refs.slider.getBoundingClientRect().left;
-          this.setPosition((event.clientX - sliderOffsetLeft) / this.$sliderSize * 100);
+          this.setPosition((event.clientX - sliderOffsetLeft) / this.sliderSize * 100);
         }
-
-      }
-    },
-    computed: {
-      $sliderSize() {
-        return parseInt(getStyle(this.$refs.slider, (this.vertical ? 'height' : 'width')), 10);
+        this.emitChange();
       },
 
+      resetSize() {
+        if (this.$refs.slider) {
+          this.sliderSize = this.$refs.slider[`client${ this.vertical ? 'Height' : 'Width' }`];
+        }
+      },
+
+      emitChange() {
+        this.$nextTick(() => {
+          this.$emit('change', this.range ? [this.minValue, this.maxValue] : this.value);
+        });
+      },
+
+      getStopStyle(position) {
+        return this.vertical ? { 'bottom': position + '%' } : { 'left': position + '%' };
+      }
+    },
+
+    computed: {
       stops() {
+        if (!this.showStops || this.min > this.max) return [];
+        if (this.step === 0) {
+          process.env.NODE_ENV !== 'production' &&
+          console.warn('[Element Warn][Slider]step should not be 0.');
+          return [];
+        }
         const stopCount = (this.max - this.min) / this.step;
         const stepWidth = 100 * this.step / (this.max - this.min);
         const result = [];
@@ -241,21 +325,23 @@
           return result.filter(step => step > 100 * (this.firstValue - this.min) / (this.max - this.min));
         }
       },
-      minDisabled() {
-        return false; // this._decrease(this.minValue, this.step) < this.min;
+
+      markList() {
+        if (!this.marks) {
+          return [];
+        }
+
+        const marksKeys = Object.keys(this.marks);
+        return marksKeys.map(parseFloat)
+          .sort((a, b) => a - b)
+          .filter(point => point <= this.max && point >= this.min)
+          .map(point => ({
+            point,
+            position: (point - this.min) * 100 / (this.max - this.min),
+            mark: this.marks[point]
+          }));
       },
 
-      _decrease(val, step) {
-        if (typeof val !== 'number') return this.currentValue;
-
-        const precisionFactor = Math.pow(10, this.precision);
-
-        return this.toPrecision((precisionFactor * val - precisionFactor * step) / precisionFactor);
-      },
-
-      maxDisabled() {
-        return false; // this._increase(this.maxValue(), this.step) > this.max;
-      },
       minValue() {
         return Math.min(this.firstValue, this.secondValue);
       },
@@ -298,14 +384,14 @@
             left: this.barStart
           };
       },
-      IndicatorClass() {
-        if(this.indicatorType){
-          return `el-slider__indicator-${this.indicatorType}`
-        }
+
+      sliderDisabled() {
+        return this.disabled || (this.elForm || {}).disabled;
       }
     },
 
     mounted() {
+      let valuetext;
       if (this.range) {
         if (Array.isArray(this.value)) {
           this.firstValue = Math.max(this.min, this.value[0]);
@@ -315,17 +401,27 @@
           this.secondValue = this.max;
         }
         this.oldValue = [this.firstValue, this.secondValue];
+        valuetext = `${this.firstValue}-${this.secondValue}`;
       } else {
         if (typeof this.value !== 'number' || isNaN(this.value)) {
           this.firstValue = this.min;
         } else {
           this.firstValue = Math.min(this.max, Math.max(this.min, this.value));
-          if(this.limit.length){
-            this.firstValue = Math.min(this.limit[1], Math.max(this.limit[0], this.firstValue));
-          }
         }
         this.oldValue = this.firstValue;
+        valuetext = this.firstValue;
       }
+      this.$el.setAttribute('aria-valuetext', valuetext);
+
+      // label screen reader
+      this.$el.setAttribute('aria-label', this.label ? this.label : `slider between ${this.min} and ${this.max}`);
+
+      this.resetSize();
+      window.addEventListener('resize', this.resetSize);
+    },
+
+    beforeDestroy() {
+      window.removeEventListener('resize', this.resetSize);
     }
   };
 </script>
